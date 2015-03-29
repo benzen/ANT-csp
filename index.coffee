@@ -3,10 +3,10 @@ _ = require 'underscore'
 
 #----
 #Config
-anthill = x:15, y:21
+anthill = x:0, y:0
 world_dim = x: 100, y: 100
-TIMEOUT_VALUE = 10
-NB_ANTS_VALUE  = 4
+TIMEOUT_VALUE = 30
+NB_ANTS_VALUE  = 10
 #----------
 
 timer = ->
@@ -17,7 +17,7 @@ timer = ->
       yield csp.timeout(TIMEOUT_VALUE)
       yield csp.put(chan, 'TICK')
   chan
-TIMER = timer()
+TIMER = csp.operations.mult(timer())
 
 food = (x, y) ->
   id: "#{x} - #{y}"
@@ -69,8 +69,7 @@ ant = ->
 
   nextPos = ->
     #choose a random new (valid) position
-    positions = generatePosition()
-    _.chain(positions)
+    _.chain(generatePosition())
       .filter(isValidPosition)
       .shuffle()
       .first()
@@ -105,26 +104,30 @@ ant = ->
     WORLD.snort(position)
 
   isHomeWithFood = ->
-    position.x == 0 and
-    position.y == 0 and
+    position.x == anthill.x and
+    position.y == anthill.y and
     bag.length
 
   onTick = ->
-    if isHomeWithFood()
-    else if bag.length
-      goHome()
-    #else if onTrack()
-    # followTrack
-    else if onFood()
-      takeHome()
-    else
-      keepSearching()
+    switch
+      when isHomeWithFood()
+        ""
+      when bag.length
+        goHome()
+      #when onTrack()
+        #followTrack()
+      when onFood()
+        takeHome()
+      else
+        keepSearching()
 
   chan =  csp.chan()
   csp.go ->
+    localTimer = csp.chan()
+    csp.operations.mult.tap(TIMER, localTimer)
     while true
       yield csp.put chan, position
-      yield csp.take(TIMER)
+      yield csp.take(localTimer)
       onTick()
   chan
 #----------------------
@@ -168,7 +171,7 @@ drawMap = (antsPositions) ->
   ctx.fillRect 0, 0, width, height
 
   ctx.fillStyle = brown
-  ctx.fillRect 0, 0, cellSize, cellSize
+  ctx.fillRect anthill.x, anthill.y, cellSize, cellSize
 
   _.each antsPositions, (antPos)->
     ctx.fillStyle = black
