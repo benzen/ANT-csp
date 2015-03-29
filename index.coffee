@@ -14,8 +14,7 @@ timer = ->
   chan = csp.chan()
   csp.go ->
     while true
-      t = csp.timeout(TIMEOUT_VALUE)
-      res = yield csp.alts([chan, t])
+      yield csp.timeout(TIMEOUT_VALUE)
       yield csp.put(chan, 'TICK')
   chan
 TIMER = timer()
