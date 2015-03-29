@@ -1,16 +1,20 @@
 csp = require 'js-csp'
 _ = require 'underscore'
 
+#----
+#Config
 anthill = x:15, y:21
 world_dim = x: 100, y: 100
-TIMEOUT = 10
+TIMEOUT_VALUE = 10
+NB_ANTS_VALUE  = 4
+#----------
 
 timer = ->
-  #send tick on every X s
+  #send tick on every TIMEOUT_VALUE ms
   chan = csp.chan()
   csp.go ->
     while true
-      t = csp.timeout(TIMEOUT)
+      t = csp.timeout(TIMEOUT_VALUE)
       res = yield csp.alts([chan, t])
       yield csp.put(chan, 'TICK')
   chan
@@ -22,7 +26,7 @@ food = (x, y) ->
   pos:
     x:y,y:y
 
-foods = [
+FOODS = [
   food(10, 22),
   food(33, 67),
   food(57, 33),
@@ -32,10 +36,12 @@ foods = [
 
 world =
   snort: (pos) ->
-    _.find foods, (f) ->
+    _.find FOODS, (f) ->
       f.available == yes and
       f.pos.x == pos.x and
       f.pos.y == pos.y
+
+WORLD = world
 
 ant = ->
   position = x:0, y:0
@@ -97,7 +103,7 @@ ant = ->
     position = nextPos()
 
   onFood = ->
-    world.snort(position)
+    WORLD.snort(position)
 
   isHomeWithFood = ->
     position.x == 0 and
@@ -129,14 +135,12 @@ status = (ants) ->
   chan = csp.chan()
   csp.go ->
     while true
-      a1p = yield ants[0]
-      a2p = yield ants[1]
-      a3p = yield ants[2]
-      positions  = [a1p, a2p, a3p]
+      positions = []
+      for ant, index  in ants
+        positions[index] = yield csp.take ant
       yield csp.put chan, positions
   chan
 
-ants = [ant(), ant(), ant()]
 
 #----------------------
 # Présentation
@@ -171,12 +175,14 @@ drawMap = (antsPositions) ->
     ctx.fillStyle = black
     ctx.fillRect antPos.x* cellSize, antPos.y * cellSize, cellSize, cellSize
 
-  _.each foods, (f)->
+  _.each FOODS, (f) ->
     if f.available
       ctx.fillStyle = red
       ctx.fillRect f.pos.x * cellSize, f.pos.y * cellSize, cellSize, cellSize
 
 csp.go ->
+  ants = _.times NB_ANTS_VALUE, ant
+
   statusChan = status(ants)
   while true
     statusLine = yield statusChan
