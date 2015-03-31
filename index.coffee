@@ -65,6 +65,7 @@ mark = (from, to) ->
       level: 1
 
 evaporation = ->
+  "Evaporation process"
   localTimer = csp.chan()
   csp.operations.mult.tap(TIMER, localTimer)
   csp.go ->
@@ -83,11 +84,13 @@ evaporation = ->
 #
 #Ants
 ant = ->
+  "Ant process"
   position = x:anthill.x, y:anthill.y
-  previous_position = x:anthill.x, y:anthill.y
+  previous_position = x:anthill.x, y:anthill.y #usefull to not going backward
   bag = []
 
   generatePosition = ->
+    "create possible moves"
     [   x:position.x+1, y:position.y
       ,
         x:position.x-1, y:position.y
@@ -95,9 +98,14 @@ ant = ->
         x:position.x, y:position.y+1
       ,
         x:position.x, y:position.y-1
+      ,
+        x:position.x-1, y:position.y-1
+      ,
+        x:position.x+1, y:position.y+1
     ]
 
   isValidPosition = (p) ->
+    "Assert that the given position respect the bounds of the known world"
     p.x >= 0 and
     p.y >= 0 and
     p.x <= world_dim.x and
@@ -106,12 +114,13 @@ ant = ->
     not isSamePos(p, previous_position)
 
   distance = (p1, p2) ->
+    "compute the distance between the two given points"
     x = Math.pow(p2.x - p1.x, 2)
     y = Math.pow(p2.y - p1.y, 2)
     Math.sqrt(x+y)
 
   nextPos = ->
-    #choose a random new (valid) position
+    "choose a random new (valid) position, as close as possible from food"
     _.chain(generatePosition())
       .filter isValidPosition
       .filter isNotPreviousPosition
@@ -121,12 +130,15 @@ ant = ->
       .value()
 
   move_to = (p)->
+    "make the current position the previous_position, and the given position the current position"
     [previous_position, position] = [position, p]
 
   onTrack = ->
+    "is there a mark on my current Position"
     snort position
 
   followTrack = ->
+    "go to the other end of the mark. If it's the end of the track find a random position."
     followedMark  = _.chain snort(position)
       .filter (m) -> isNotPreviousPosition(m.to)
       .last()
@@ -137,7 +149,7 @@ ant = ->
       keepSearching()
 
   nextPosToHome = ->
-    # choose a position that make me closer to anthill
+    "find a position that go closer to the anthill"
     positions = generatePosition()
     _.chain(positions)
       .filter isValidPosition
@@ -146,27 +158,32 @@ ant = ->
       .value()
 
   goHome = ->
-    if bag.length
-      mark position, previous_position
+    "move to a position closer to anthill and put a mark"
+    mark position, previous_position
     move_to nextPosToHome()
 
   takeHome = ->
+    "take the food on the floor(reduce it's amount and put it into my bag) and go to the anthill."
     f = isThereFood(position)
     f.amount--
     bag = [f]
     goHome()
 
   onFood = ->
+    "Is there food on this position"
     !!isThereFood(position)
 
   isHomeWithFood = ->
+    "What's on tv?"
     bag.length and
     isSamePos position, anthill
 
   keepSearching = ->
+    "Choose a new random position"
     move_to nextPos()
 
   onTick = ->
+    "What to do when Timer's tick"
     switch
       when isHomeWithFood()
         ""
@@ -193,6 +210,7 @@ ant = ->
 # Status extractor
 
 status = (ants) ->
+  "Take each ants's positions and put it into a single channel"
   chan = csp.chan()
   csp.go ->
     while true
@@ -219,6 +237,7 @@ red   = 'red'
 blue = 250
 
 getContext = (mapWidth, mapHeight) ->
+  "return the first canvas's 2d context, create one if there isn't one"
   unless $('canvas').length
     canvas = $('<canvas>')
     .attr("width", width)
@@ -228,6 +247,7 @@ getContext = (mapWidth, mapHeight) ->
   $('canvas')[0].getContext("2d")
 
 drawMap = (antsPositions) ->
+  "Draw everything; background, marks, anthill, ants, foods"
   ctx = getContext()
   ctx.fillStyle = 'green'
   ctx.fillRect 0, 0, scale(world_dim.x), scale(world_dim.y)
