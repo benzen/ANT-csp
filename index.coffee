@@ -5,8 +5,8 @@ _ = require 'underscore'
 #Config
 anthill = x:0, y:0
 world_dim = x: 100, y: 100
-TIMEOUT_VALUE = 30
-NB_ANTS_VALUE  = 10
+TIMEOUT_VALUE = 10
+NB_ANTS_VALUE  = 50
 #----------
 
 timer = ->
@@ -21,29 +21,65 @@ TIMER = csp.operations.mult(timer())
 
 food = (x, y) ->
   id: "#{x} - #{y}"
-  available: yes
+  amount: 10
   pos:
-    x:y,y:y
+    x:x,y:y
 
 FOODS = [
   food(10, 22),
   food(33, 67),
   food(57, 33),
   food(89, 10),
-  food(5, 90)
+  food(5, 90),
+  food(10,10),
+  food(22, 4)
 ]
+isSamePos = (p1,p2) ->
+  p1.x == p2.x and p1.y == p2.y
 
-world =
-  snort: (pos) ->
-    _.find FOODS, (f) ->
-      f.available == yes and
-      f.pos.x == pos.x and
-      f.pos.y == pos.y
+isThereFood = (pos) ->
+  _.find FOODS, (f) ->
+    f.amount > 0 and
+    isSamePos f.pos, pos
 
-WORLD = world
+MARKS = []
+snort = (p) ->
+  _.filter MARKS, (m) ->
+    m.level > 0 and
+    isSamePos(m.from, p)
+
+mark = (from, to) ->
+  previousMark = _.find MARKS, (m)->
+    isSamePos(m.from, from) and
+    isSamePos(m.to, to)
+  if previousMark
+    previousMark.level++
+  else
+    MARKS.push
+      from: from
+      to: to
+      level: 1
+
+evaporation = ->
+  localTimer = csp.chan()
+  csp.operations.mult.tap(TIMER, localTimer)
+  csp.go ->
+    counter = 0
+    while true
+      yield csp.take localTimer
+      counter++
+      if counter == 1000
+        counter = 0
+        _.each MARKS, (m)->
+          m.level--
+        MARKS = _.filter MARKS, (m)->
+          m.level < 0
+evaporation()
+
 
 ant = ->
-  position = x:0, y:0
+  position = x:anthill.x, y:anthill.y
+  previous_position = x:anthill.x, y:anthill.y
   bag = []
 
   generatePosition = ->
@@ -61,6 +97,8 @@ ant = ->
     p.y >= 0 and
     p.x <= world_dim.x and
     p.y <= world_dim.y
+  isNotPreviousPosition = (p) ->
+    not isSamePos(p, previous_position)
 
   distance = (p1, p2) ->
     x = Math.pow(p2.x - p1.x, 2)
@@ -70,43 +108,58 @@ ant = ->
   nextPos = ->
     #choose a random new (valid) position
     _.chain(generatePosition())
-      .filter(isValidPosition)
+      .filter isValidPosition
+      .filter isNotPreviousPosition
       .shuffle()
       .first()
       .value()
+
+  move_to = (p)->
+    [previous_position, position] = [position, p]
+
+  onTrack = ->
+    snort position
+
+  followTrack = ->
+    followedMark  = _.chain snort(position)
+      .filter (m) -> isNotPreviousPosition(m.to)
+      .last()
+      .value()
+    if followedMark
+      move_to followedMark.to
+    else
+      keepSearching()
 
   nextPosToHome = ->
     # choose a position that make me closer to anthill
     positions = generatePosition()
     _.chain(positions)
-      .filter(isValidPosition)
-      .sortBy((p) ->distance(x:0, y:0, p))
+      .filter isValidPosition
+      #.filter isNotPreviousPosition
+      .sortBy (p) ->distance anthill, p
       .first()
       .value()
 
-  #nextPosFollowingPath
-  #followPath: ->
-
   goHome = ->
-    p = nextPosToHome()
-    position = p
+    if bag.length
+      mark position, previous_position
+    move_to nextPosToHome()
 
   takeHome = ->
-    f = world.snort(position)
-    f.available = no
+    f = isThereFood(position)
+    f.amount--
     bag = [f]
     goHome()
 
-  keepSearching = ->
-    position = nextPos()
-
   onFood = ->
-    WORLD.snort(position)
+    !!isThereFood(position)
 
   isHomeWithFood = ->
-    position.x == anthill.x and
-    position.y == anthill.y and
-    bag.length
+    bag.length and
+    isSamePos position, anthill
+
+  keepSearching = ->
+    move_to nextPos()
 
   onTick = ->
     switch
@@ -114,10 +167,10 @@ ant = ->
         ""
       when bag.length
         goHome()
-      #when onTrack()
-        #followTrack()
       when onFood()
         takeHome()
+      when onTrack()
+        followTrack()
       else
         keepSearching()
 
@@ -149,12 +202,14 @@ status = (ants) ->
 
 $ = require 'jquery'
 cellSize = 10
-width = world_dim.x * cellSize
-height = world_dim.y * cellSize
+scale = (coord) -> cellSize * coord
+width = scale world_dim.x
+height = scale world_dim.y
 black = 'black'
 green = 'green'
 brown = 'brown'
 red   = 'red'
+blue = 250
 
 getContext = (mapWidth, mapHeight) ->
   unless $('canvas').length
@@ -167,20 +222,24 @@ getContext = (mapWidth, mapHeight) ->
 
 drawMap = (antsPositions) ->
   ctx = getContext()
-  ctx.fillStyle = green
-  ctx.fillRect 0, 0, width, height
+  ctx.fillStyle = 'green'
+  ctx.fillRect 0, 0, scale(world_dim.x), scale(world_dim.y)
+
+  _.each MARKS, (m)->
+    if m.level > 0
+      ctx.fillStyle = "rgba(170,255, 234, #{m.level/100})"
+      ctx.fillRect scale(m.from.x), scale(m.from.y), cellSize, cellSize
 
   ctx.fillStyle = brown
   ctx.fillRect anthill.x, anthill.y, cellSize, cellSize
 
   _.each antsPositions, (antPos)->
     ctx.fillStyle = black
-    ctx.fillRect antPos.x* cellSize, antPos.y * cellSize, cellSize, cellSize
+    ctx.fillRect scale(antPos.x), scale(antPos.y), cellSize, cellSize
 
   _.each FOODS, (f) ->
-    if f.available
-      ctx.fillStyle = red
-      ctx.fillRect f.pos.x * cellSize, f.pos.y * cellSize, cellSize, cellSize
+    ctx.fillStyle = red
+    ctx.fillRect scale(f.pos.x), scale(f.pos.y), cellSize, cellSize
 
 csp.go ->
   ants = _.times NB_ANTS_VALUE, ant

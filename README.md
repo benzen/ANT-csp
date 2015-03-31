@@ -16,5 +16,7 @@ TODO
 ------
 
 * Ant should be able to mark path from food to anthill.
+
+* Pheromone/marks should evaporate
 * Food could be mutiple on the same spot
 * Ant and world communication should be async/cspable
