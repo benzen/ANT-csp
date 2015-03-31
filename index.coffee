@@ -111,6 +111,10 @@ ant = ->
       .filter isValidPosition
       .filter isNotPreviousPosition
       .shuffle()
+      .sortBy (p) ->
+        if isThereFood p
+          console.log "FOOOOD"
+        isThereFood(p)
       .first()
       .value()
 
@@ -238,8 +242,9 @@ drawMap = (antsPositions) ->
     ctx.fillRect scale(antPos.x), scale(antPos.y), cellSize, cellSize
 
   _.each FOODS, (f) ->
-    ctx.fillStyle = red
-    ctx.fillRect scale(f.pos.x), scale(f.pos.y), cellSize, cellSize
+    if f.amount > 0
+      ctx.fillStyle = red
+      ctx.fillRect scale(f.pos.x), scale(f.pos.y), cellSize, cellSize
 
 csp.go ->
   ants = _.times NB_ANTS_VALUE, ant
