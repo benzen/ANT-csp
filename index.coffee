@@ -9,6 +9,7 @@ TIMEOUT_VALUE = 10
 NB_ANTS_VALUE  = 50
 #----------
 
+#Timer
 timer = ->
   #send tick on every TIMEOUT_VALUE ms
   chan = csp.chan()
@@ -18,9 +19,10 @@ timer = ->
       yield csp.put(chan, 'TICK')
   chan
 TIMER = csp.operations.mult(timer())
-
+#-----------
+#
+#Food
 food = (x, y) ->
-  id: "#{x} - #{y}"
   amount: 10
   pos:
     x:x,y:y
@@ -41,7 +43,9 @@ isThereFood = (pos) ->
   _.find FOODS, (f) ->
     f.amount > 0 and
     isSamePos f.pos, pos
-
+#----------
+#
+#Marks
 MARKS = []
 snort = (p) ->
   _.filter MARKS, (m) ->
@@ -72,11 +76,12 @@ evaporation = ->
         counter = 0
         _.each MARKS, (m)->
           m.level--
+        #Garbage collecting marks
         MARKS = _.filter MARKS, (m)->
           m.level < 0
-evaporation()
-
-
+#---------
+#
+#Ants
 ant = ->
   position = x:anthill.x, y:anthill.y
   previous_position = x:anthill.x, y:anthill.y
@@ -111,10 +116,7 @@ ant = ->
       .filter isValidPosition
       .filter isNotPreviousPosition
       .shuffle()
-      .sortBy (p) ->
-        if isThereFood p
-          console.log "FOOOOD"
-        isThereFood(p)
+      .sortBy isThereFood
       .first()
       .value()
 
@@ -139,7 +141,6 @@ ant = ->
     positions = generatePosition()
     _.chain(positions)
       .filter isValidPosition
-      #.filter isNotPreviousPosition
       .sortBy (p) ->distance anthill, p
       .first()
       .value()
@@ -188,6 +189,7 @@ ant = ->
       onTick()
   chan
 #----------------------
+#
 # Status extractor
 
 status = (ants) ->
@@ -202,7 +204,8 @@ status = (ants) ->
 
 
 #----------------------
-# Présentation
+#
+# Rendering
 
 $ = require 'jquery'
 cellSize = 10
@@ -245,11 +248,15 @@ drawMap = (antsPositions) ->
     if f.amount > 0
       ctx.fillStyle = red
       ctx.fillRect scale(f.pos.x), scale(f.pos.y), cellSize, cellSize
+#----------
+#
+#Main loop
+ants = _.times NB_ANTS_VALUE, ant
+evaporation()
+statusChan = status(ants)
 
 csp.go ->
-  ants = _.times NB_ANTS_VALUE, ant
-
-  statusChan = status(ants)
   while true
     statusLine = yield statusChan
     drawMap statusLine
+
