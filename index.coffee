@@ -3,15 +3,15 @@ _ = require 'underscore'
 
 #----
 #Config
-anthill = x:0, y:0
+anthill = x:40, y:40
 world_dim = x: 100, y: 100
-TIMEOUT_VALUE = 10
-NB_ANTS_VALUE  = 50
+TIMEOUT_VALUE = 33
+NB_ANTS_VALUE  = 100
 #----------
 
 #Timer
 timer = ->
-  #send tick on every TIMEOUT_VALUE ms
+  "send tick on every IMEOUT_VALUE ms"
   chan = csp.chan()
   csp.go ->
     while true
@@ -23,6 +23,7 @@ TIMER = csp.operations.mult(timer())
 #
 #Food
 food = (x, y) ->
+  "Create a food at the given position, every food as an amount of 10"
   amount: 10
   pos:
     x:x,y:y
@@ -36,10 +37,13 @@ FOODS = [
   food(10,10),
   food(22, 4)
 ]
+
 isSamePos = (p1,p2) ->
+  "Compare two positions"
   p1.x == p2.x and p1.y == p2.y
 
 isThereFood = (pos) ->
+  "find a food (with amount superior to 0) at the given position"
   _.find FOODS, (f) ->
     f.amount > 0 and
     isSamePos f.pos, pos
@@ -48,11 +52,13 @@ isThereFood = (pos) ->
 #Marks
 MARKS = []
 snort = (p) ->
+  "is there a mark starting at the given position with a level superior to 0"
   _.filter MARKS, (m) ->
     m.level > 0 and
     isSamePos(m.from, p)
 
 mark = (from, to) ->
+  "create a directed mark, if it already exists increase it's level"
   previousMark = _.find MARKS, (m)->
     isSamePos(m.from, from) and
     isSamePos(m.to, to)
@@ -186,7 +192,8 @@ ant = ->
     "What to do when Timer's tick"
     switch
       when isHomeWithFood()
-        ""
+        bag.pop()
+        move_to nextPos()
       when bag.length
         goHome()
       when onFood()
@@ -253,12 +260,11 @@ drawMap = (antsPositions) ->
   ctx.fillRect 0, 0, scale(world_dim.x), scale(world_dim.y)
 
   _.each MARKS, (m)->
-    if m.level > 0
-      ctx.fillStyle = "rgba(170,255, 234, #{m.level/100})"
-      ctx.fillRect scale(m.from.x), scale(m.from.y), cellSize, cellSize
+    ctx.fillStyle = "rgba(170,255, 234, #{m.level/100})"
+    ctx.fillRect scale(m.from.x), scale(m.from.y), cellSize, cellSize
 
   ctx.fillStyle = brown
-  ctx.fillRect anthill.x, anthill.y, cellSize, cellSize
+  ctx.fillRect scale(anthill.x), scale(anthill.y), cellSize, cellSize
 
   _.each antsPositions, (antPos)->
     ctx.fillStyle = black
