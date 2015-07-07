@@ -1,39 +1,28 @@
-
-<!doctype html>
-<html lang="en">
-    <head>
-        <meta charset="utf-8">
-        <title>Reveal.js</title>
-        <link rel="stylesheet" href="/css/reveal.css">
-        <link rel="stylesheet" href="/css/theme/black.css" id="theme">
-        <!-- For syntax highlighting -->
-        <link rel="stylesheet" href="/lib/css/zenburn.css">
-
-        <!-- If the query includes 'print-pdf', use the PDF print sheet -->
-        <script>
-          document.write( '<link rel="stylesheet" href="/css/print/' + ( window.location.search.match( /print-pdf/gi ) ? 'pdf' : 'paper' ) + '.css" type="text/css" media="print">' );
-        </script>
-    </head>
-    <body>
-
-        <div class="reveal">
-            <div class="slides"><section  data-markdown><script type="text/template"># CSP
+# CSP
 ## Programmation orienté tapis roulants
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 #Attention
 Des scènes violentes pourraient choquer les vieux **nodeJs**.
 L'utilisation des jeunes **iojs** et **Coffeescript** est conseillé.
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 Il était une fois
 
 http://www.infoq.com/presentations/transducer-clojure
 
 (à la minute 42 il dit _channel_)
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 Il était une autre fois
 
 https://github.com/fxg42/async-comparison
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 # Callback 
 ## Hell YEAH
 
@@ -47,7 +36,9 @@ find: (cb) ->
       if err then cb err
       else cb null, data
 ````
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 #async auto 
 ##_a.k.a._ Make
 
@@ -62,7 +53,9 @@ find: (cb) ->
     find: ["collection", doFind]
   , (err, {find}) -> cb err, find
 ````
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 
 #csp
 
@@ -79,11 +72,15 @@ find: (cb) ->
     cb e
 
 ````
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 # CSP Begins
 
-![Hoar](images/Sir_Tony_Hoare_IMG_5125.jpg)
-</script></section><section  data-markdown><script type="text/template">
+![Hoar](Sir_Tony_Hoare_IMG_5125.jpg)
+
+---
+
 # C.A.R. Hoare
 
 * "Classe"
@@ -94,16 +91,22 @@ find: (cb) ->
   * null
 * Channel Sequencial Processing (1978)
 
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 # La base
 
 * chan
 * put
 * take
 * go block
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 Put & take sont bloquants
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 Rappel générateurs ES6
 
 Javascript
@@ -124,7 +127,9 @@ Coffeescript
  fn = ->
   yield 'Bonjour'
 ```
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 Exemple (js-csp)
 
 ```coffee
@@ -146,11 +151,15 @@ player "pong", table
 csp.putAsync table, hits: 0
 
 ```
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
  Le ping pong c'est bien beau
  
  mais moi je fais des vrais systèmes
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 * pipe (unix |)
 
 ```
@@ -189,7 +198,9 @@ csp.putAsync table, hits: 0
 
 * Pub/Sub
 * Mix
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 # &#9829;(Channel) =  Buffer
 
 Fixe
@@ -215,7 +226,9 @@ Sliding
                            ->     |______\ ->
                                          U
 ```
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 # Exemple plus sensé, mais en go
 
 ```go
@@ -236,7 +249,9 @@ for i := 0; i < 3; i++ {
 }
 return
 ```
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 # Exemple clojure
 ## VIVA )
 
@@ -259,7 +274,9 @@ return
     (go (while true (append-to-file filename (<! c))))
     (dotimes [n num-quotes] (go (>! c (random-quote))))))
 ```
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 # CSP != Acteur
 
 
@@ -271,7 +288,9 @@ return
 | **Réseau**       |  | Un jour ...         |  | les doigts dans le nez |
 
 nb: Thread != processus
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 # Implémentation
 
 * Ada
@@ -280,9 +299,13 @@ nb: Thread != processus
 * Clojure core.async (Lib macro)
 * cspjs (Marco sweetjs)
 * js-csp/node-csp (Genérateur)
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 JS-CSP: la réponse à tout mes problèmes ?
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 js-csp n'est pas:
 
 * La réponse à tout tes problèmes
@@ -295,13 +318,17 @@ js-csp n'est pas:
 * décidé sur quoi faire des erreurs
 * Multi-tread
 * fait pour le réseau
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 js-csp permet:
 
 * donner un style synchrone a du code  asynchrone
 * Simplifier la coordonination de tâches
 * de raisoner sur des petits processus simple
-</script></section><section  data-markdown><script type="text/template">
+
+---
+
 #Référence
 
 * David Nolen: http://swannodette.github.io/
@@ -310,53 +337,3 @@ js-csp permet:
 * Rob Pike
   * https://www.youtube.com/watch?v=f6kdp27TYZs
   * http://talks.golang.org/2012/concurrency.slide#1
-</script></section></div>
-        </div>
-
-        <script src="/lib/js/head.min.js"></script>
-        <script src="/js/reveal.js"></script>
-
-        <script>
-            function extend() {
-              var target = {};
-              for (var i = 0; i < arguments.length; i++) {
-                var source = arguments[i];
-                for (var key in source) {
-                  if (source.hasOwnProperty(key)) {
-                    target[key] = source[key];
-                  }
-                }
-              }
-              return target;
-            }
-
-            // Optional libraries used to extend on reveal.js
-            var deps = [
-              { src: '/lib/js/classList.js', condition: function() { return !document.body.classList; } },
-              { src: '/plugin/markdown/marked.js', condition: function() { return !!document.querySelector('[data-markdown]'); } },
-              { src: '/plugin/markdown/markdown.js', condition: function() { return !!document.querySelector('[data-markdown]'); } },
-              { src: '/plugin/highlight/highlight.js', async: true, callback: function() { hljs.initHighlightingOnLoad(); } },
-              { src: '/plugin/notes/notes.js', async: true, condition: function() { return !!document.body.classList; } },
-              { src: '/plugin/math/math.js', async: true }
-            ];
-
-            // default options to init reveal.js
-            var defaultOptions = {
-              controls: true,
-              progress: true,
-              history: true,
-              center: true,
-              transition: 'default',
-              dependencies: deps
-            };
-
-            // options from URL query string
-            var queryOptions = Reveal.getQueryHash() || {};
-
-            var options = {};
-            options = extend(defaultOptions, options, queryOptions);
-            Reveal.initialize(options);
-        </script>
-    </body>
-</html>
-
